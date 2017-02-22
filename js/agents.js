@@ -1,8 +1,9 @@
-function Agent(id, nodeId, state, memory) {
+function Agent(id, nodeId, state, memory, phase) {
     this.id = id;
     this.nodeId = nodeId;
     this.state = state; 
     this.memory = memory; 
+    this.phase = phase;
 }
 
 function Whiteboard(nodeId, context) {

@@ -90,7 +90,7 @@ function start() {
             var nodeId = getRandomInt(0, n - 1);
             if (added.indexOf(nodeId) >= 0) continue; // if already exists
             added.push(nodeId);
-            agents.push(new Agent(id, nodeId, 'active', []));
+            agents.push(new Agent(id, nodeId, 'active', [], 0));
             id++;
         }
     }
@@ -107,18 +107,18 @@ function start() {
 
 function action() {
     leaderElection();
+
 }
 
 function leaderElection() {
-    var isPhaseEnd = true;
+    var isFinished = true;
     for (var i = 0; i < agents.length; i++) {
         var agent = agents[i];
-        if (agent.state != 'active') continue;
-        if (agent.memory.length != 3)
-            isPhaseEnd = false;
+        if (agent.state == 'active' && agent.phase < phaseLimit)
+            isFinished = false;
     }
 
-    if (!isPhaseEnd) {
+    if (!isFinished) {
         // move agents
         for (var i = 0; i < agents.length; i++) {
             var agent = agents[i];
@@ -127,44 +127,43 @@ function leaderElection() {
             var onNodeId = getNextNode(agent.nodeId);
             agent.nodeId = onNodeId;
 
-            if (agent.memory.length == 3) continue;
+            if (agent.state == 'leader') continue;
+
             var wb = whiteboards[onNodeId];
             if (wb.context != undefined)
                 agent.memory.push(wb.context);
 
+            // finish reading 3 IDs
             if (agent.memory.length == 3) {
-                // finish reading 3 IDs
-                if (agent.memory[1] < agent.memory[0]
-                    && agent.memory[1] < agent.memory[2]) {
-                    agent.state = 'active' // keep active.
+                if (agent.memory[1] < agent.memory[0] && agent.memory[1] < agent.memory[2]) {
+                    if (agent.phase == phaseLimit) {
+                        agent.state = 'leader';
+                    } else {
+                        agent.state = 'active';  // keep active
+                        var newId = agent.memory[1];
+                        agent.id = newId;
+                        agent.memory = [];
+                        whiteboards[agent.nodeId].context = newId;
+                        agent.phase++;
+                    }
                 } else {
-                    agent.state = 'inactive'
+                    agent.state = 'inactive';
+//                    for (var i = 0; i < whiteboards.length; i++){
+//                        var wb = whiteboards[i];
+//                        if (wb.context == agent.id)
+//                            wb.context = undefined;
+//                    }
                 }
             }
         }
-        round++;
-        console.log(phase + ":" + round);
         draw(agents, whiteboards);
-    } else { 
+    } else {
         // turn to the next phase
-        if (phase == phaseLimit) {
-            console.log("FINISH!");
-            return;
-        }
-        phase++;
-        // console.log("START PHASE:" + phase);
 
+        console.log("FINISH!");
+        
         for (var i = 0; i < whiteboards.length; i++) {
             whiteboards[i].context = undefined;
-        }
-
-        for (var i = 0; i < agents.length; i++) {
-            var agent = agents[i];
-            if (agent.state != 'active') continue;
-            var newId = agent.memory[1];
-            agent.id = newId;
-            agent.memory = [];
-            whiteboards[agent.nodeId].context = newId;
         }
         draw(agents, whiteboards);
     }
