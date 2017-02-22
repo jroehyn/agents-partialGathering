@@ -15,7 +15,7 @@ function start() {
         alert('k must be less than n.');
         return;
     }
-    if (n == _n && k == _k && g == _g) return;
+//    if (n == _n && k == _k && g == _g) return;
     n = _n;
     k = _k;
     g = _g;
