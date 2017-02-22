@@ -41,7 +41,7 @@ function draw(agents, whiteboards) {
             var height = 20;
 
             context.fillStyle = 'black';
-            context.font = 'bold 18px Arial';
+            context.font = '18px Arial';
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             if (wb.context != undefined) {
@@ -95,7 +95,7 @@ function draw(agents, whiteboards) {
 
             // draw agent id
             context.fillStyle = 'black';
-            context.font = 'bold 18px Arial';
+            context.font = '18px Arial';
             context.fillText(agent.id, x + r, y - r * 2.7);
         }
     });
