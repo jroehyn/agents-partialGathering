@@ -143,8 +143,9 @@ function leaderElection() {
                         var newId = agent.memory[1];
                         agent.id = newId;
                         agent.memory = [];
+                        agent.memory.push(newId);
                         whiteboards[agent.nodeId].context = newId;
-                        agent.phase++;
+                        agent.phase = agent.phase + 1;
                     }
                 } else {
                     agent.state = 'inactive';
