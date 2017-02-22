@@ -31,7 +31,7 @@ function start() {
     var nodes = new vis.DataSet();
     for (var i = 0; i < n; i++) {
         nodes.add({ id: i });
-        whiteboards.push(new Whiteboard(i, undefined));
+        whiteboards.push(new Whiteboard(i, undefined, false));
     }
     var edges = new vis.DataSet();
     for (var i = 0; i < n; i++) {
@@ -130,7 +130,7 @@ function leaderElection() {
             if (agent.state == 'leader') continue;
 
             var wb = whiteboards[onNodeId];
-            if (wb.context != undefined)
+            if (wb.context != undefined && !wb.isInactive)
                 agent.memory.push(wb.context);
 
             // finish reading 3 IDs
@@ -149,11 +149,8 @@ function leaderElection() {
                     }
                 } else {
                     agent.state = 'inactive';
-//                    for (var i = 0; i < whiteboards.length; i++){
-//                        var wb = whiteboards[i];
-//                        if (wb.context == agent.id)
-//                            wb.context = undefined;
-//                    }
+                    var wb = whiteboards[agent.nodeId];
+                    wb.isInactive = true;
                 }
             }
         }

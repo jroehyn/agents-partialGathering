@@ -6,9 +6,10 @@ function Agent(id, nodeId, state, memory, phase) {
     this.phase = phase;
 }
 
-function Whiteboard(nodeId, context) {
+function Whiteboard(nodeId, context, isInactive) {
     this.nodeId = nodeId;
     this.context = context;
+    this.isInactive = isInactive;
 }
 
 function draw(agents, whiteboards) {
