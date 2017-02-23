@@ -10,17 +10,16 @@ var isLeaderElected;
 reset();
 
 function reset() {
-    _n = Number(document.getElementById('n').value);
-    _k = Number(document.getElementById('k').value);
-    _g = Number(document.getElementById('g').value);
-    if (_k > _n) {
+    n = Number(document.getElementById('n').value);
+    k = Number(document.getElementById('k').value);
+    g = Number(document.getElementById('g').value);
+    if (k > n) {
         alert('k must be less than n.');
         return;
+    } else if (g > k) {
+        alert('g must be less than k.');
+        return;
     }
-    //    if (n == _n && k == _k && g == _g) return;
-    n = _n;
-    k = _k;
-    g = _g;
 
     // reset all
     whiteboards = [];
@@ -32,11 +31,6 @@ function reset() {
     var nodes = new vis.DataSet();
     for (var i = 0; i < n; i++) {
         nodes.add({ id: i });
-        var wb = new Whiteboard(i, undefined, false, false)
-        wb.nodeId = i;
-        wb.context = undefined;
-        wb.isInactive = false;
-        whiteboards.push(wb);
     }
     var edges = new vis.DataSet();
     for (var i = 0; i < n; i++) {
@@ -92,53 +86,61 @@ function reset() {
     var act = function () {
         if (this.state == 'inactive') {
             var wb = whiteboards[this.nodeId];
-            if (wb.context == 'T' || wb.context == 'F')
+            if (wb.isGather == 'T' || wb.isGather == 'F')
                 this.state = 'moving';
-            
             return;
-        } else if (this.state == 'leader') {
+        }
+        else if (this.state == 'leader') {
             var onNodeId = getNextNode(this.nodeId);
             this.nodeId = onNodeId;
             var wb = whiteboards[onNodeId];
 
-            if (wb.context == 'F'){
+            if (wb.isGather == 'F')
                 this.state = 'moving';
-            }
-            else  if (wb.isInactive == true){
+
+            else if (wb.isInactive == true) {
                 this.count = this.count + 1;
                 if ((this.count + 1) % g != 0)
-                    wb.context = 'F';
+                    wb.isGather = 'F';
                 else
-                    wb.context = 'T';
+                    wb.isGather = 'T';
             }
-
             return;
-        } else if (this.state == 'active') {
+        }
+        else if (this.state == 'active') {
             var onNodeId = getNextNode(this.nodeId);
             this.nodeId = onNodeId;
             var wb = whiteboards[onNodeId];
 
-            if (wb.context != undefined && !wb.isInactive) {
-                var memory = this.memory;
-                if (wb.context == memory[memory.length - 1]) {
-                    this.state = 'leader';
-                    wb.isMarked = true;
-                } else {
-                    this.memory.push(wb.context);
-                }
+            if (!wb.isInactive && wb.phase < this.phase) {
+                this.state = 'wait';
+                return;
             }
-            if (this.memory.length == 3) {
-                if (this.memory[1] < this.memory[0] && this.memory[1] < this.memory[2]) {
+
+            if (wb.agentId != undefined && !wb.isInactive)
+                this.ids.push(wb.agentId);
+
+            // if only own id twice
+            if (this.ids.length == 2 && this.ids[0] == this.ids[1]) {
+                this.state = 'leader';
+                wb.isGather = 'F';
+                return;
+            }
+            if (this.ids.length == 3) {
+                if (this.ids[1] < Math.min(this.ids[0], this.ids[2])) {
                     this.state = 'active';  // keep active
-                    var newId = this.memory[1];
+                    var newId = this.ids[1];
                     this.id = newId;
-                    this.memory = [];
-                    this.memory.push(newId);
-                    whiteboards[this.nodeId].context = newId;
+                    this.ids = [];
+                    this.ids.push(newId);
+
                     this.phase = this.phase + 1; // done the phase.
+                    whiteboards[this.nodeId].agentId = newId;
+                    whiteboards[this.nodeId].phase = this.phase;
+
                     if (this.phase == phaseLimit) {
                         this.state = 'leader';
-                        wb.context = 'F'; // 0
+                        wb.isGather = 'F';
                     }
                 } else {
                     this.state = 'inactive';
@@ -146,21 +148,25 @@ function reset() {
                     wb.isInactive = true;
                 }
             }
-
             return;
-        } else if (this.state == 'moving') {
-            if (whiteboards[this.nodeId].context == 'T'){
-
-            } else {
+        }
+        else if (this.state == 'moving') {
+            if (whiteboards[this.nodeId].isGather != 'T') {
                 var onNodeId = getNextNode(this.nodeId);
                 this.nodeId = onNodeId;
             }
-
+            return;
+        } else if (this.state == 'wait') {
+            var wb = whiteboards[this.nodeId];
+            if (wb.isInactive || wb.phase == this.phase) {
+                this.state = 'active';
+            }
             return;
         }
 
     }
 
+    // initialize agents
     var added = [];
     var id = 0;
     while (added.length != k) {
@@ -169,11 +175,10 @@ function reset() {
         added.push(nodeId);
 
         var agent = new Agent()
-        // initialize agent
         agent.id = id;
         agent.nodeId = nodeId;
         agent.state = 'active';
-        agent.memory = [];
+        agent.ids = [];
         agent.phase = 0;
         agent.count = 0;
         agent.act = act;
@@ -182,18 +187,41 @@ function reset() {
         id++;
     }
 
+    // initialize whiteboards
+    for (var i = 0; i < n; i++) {
+        var wb = new Whiteboard();
+        wb.nodeId = i;
+        wb.phase = undefined;
+        wb.agentId = undefined;
+        wb.isInactive = false;
+        wb.isGather = undefined;
+        whiteboards.push(wb);
+    }
+
     for (var i = 0; i < agents.length; i++) {
         var agent = agents[i];
         var wb = whiteboards[agent.nodeId];
-        wb.context = agent.id; // write to board
-        agent.memory.push(agent.id); // save own id
+        wb.agentId = agent.id;
+        wb.phase = agent.phase;
+        agent.ids.push(agent.id);
     }
     draw(agents, whiteboards);
 }
 
 function action() {
-    for (var i = 0; i < agents.length; i++) {
-        agents[i].act();
+    var s = document.getElementById('s').value;
+    var actAgents = [];
+    if (s == 'sync') {
+        actAgents = agents;
+    } else if (s == 'async') {
+        var indices = getRandomIntList(0, agents.length - 1);
+        for (var i = 0; i < indices.length; i++) {
+            var index = indices[i];
+            actAgents.push(agents[index]);
+        }
+    }
+    for (var i = 0; i < actAgents.length; i++) {
+        actAgents[i].act();
     }
     draw(agents, whiteboards);
 }

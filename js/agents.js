@@ -1,46 +1,49 @@
-function Agent(){
+function Agent() {
 
 }
 
-function Whiteboard(){
+function Whiteboard() {
 
 }
 
 function draw(agents, whiteboards) {
     network.on("afterDrawing", function (context) {
-        // draw whiteboards
-        for (var i = 0; i < whiteboards.length; i++) {
-            var wb = whiteboards[i];
-            var nodeId = wb.nodeId;
-            var nodePosition = network.getPositions([nodeId]);
-            var x = nodePosition[nodeId].x;
-            var y = nodePosition[nodeId].y;
-            var width = 40;
-            var height = 20;
-            context.strokeStyle = 'gray';
-            context.fillStyle = 'white';
-            context.rect(x - (width / 2), y + 15, width, height);
+        {
+            // draw whiteboards 
+            for (var i = 0; i < whiteboards.length; i++) {
+                var wb = whiteboards[i];
+                var nodeId = wb.nodeId;
+                var nodePosition = network.getPositions([nodeId]);
+                var x = nodePosition[nodeId].x;
+                var y = nodePosition[nodeId].y;
+
+                var width = 40;
+                var height = 20;
+                context.fillStyle = 'white';
+                context.strokeStyle = 'gray';
+                context.rect(x - (width / 2), y + 15, width, height);
+            }
+            context.fill();
+            context.stroke();
         }
-        context.fill();
-        context.stroke();
 
-        // draw context of whiteboards
+        // draw content of whiteboards
         for (var i = 0; i < whiteboards.length; i++) {
             var wb = whiteboards[i];
             var nodeId = wb.nodeId;
             var nodePosition = network.getPositions([nodeId]);
             var x = nodePosition[nodeId].x;
             var y = nodePosition[nodeId].y;
-            var width = 40;
-            var height = 20;
 
-            context.fillStyle = 'black';
-            context.font = '18px Arial';
+            if (wb.isGather == 'T')
+                context.fillStyle = '#C72C00'; // leader color
+            else
+                context.fillStyle = 'black';
             context.textAlign = 'center';
             context.textBaseline = 'middle';
-            if (wb.context != undefined) {
-                context.fillText(wb.context, x, y + 15 + (height / 2));
-            }
+            context.font = '18px Arial';
+            var id = (wb.agentId != undefined) ? wb.agentId : "";
+            context.fillText(id, x, y + 15 + (height / 2));
         }
 
         // drawing agents
@@ -74,7 +77,7 @@ function draw(agents, whiteboards) {
             var agent = agents[i];
             drawAgentBody(agent, context, added, function (x, y, r) {
                 context.fillStyle = 'black';
-                context.font = '18px Arial';
+                context.font = '13px Arial';
                 context.fillText(agent.id, x + r, y - r * 2.7);
             });
         }
@@ -95,6 +98,8 @@ function draw(agents, whiteboards) {
         context.strokeStyle = 'black';
         if (agent.state == 'active')
             context.fillStyle = '#FF6F00';
+        else if (agent.state == 'wait')
+            context.fillStyle = '#9B59B6';
         else if (agent.state == 'inactive')
             context.fillStyle = 'gray';
         else if (agent.state == 'leader')
@@ -107,10 +112,19 @@ function draw(agents, whiteboards) {
         var r = 13;
         f(x, y, r);
     }
+
+
 }
-
-
 
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getRandomIntList(min, max) {
+    var ret = [];
+    for (var i = min; i <= max; i++) {
+        if (Math.random() > 0.2)
+            ret.push(i);
+    }
+    return ret;
 }
