@@ -43,7 +43,8 @@ function draw(agents, whiteboards) {
             context.textBaseline = 'middle';
             context.font = '18px Arial';
             var id = (wb.agentId != undefined) ? wb.agentId : "";
-            context.fillText(id, x, y + 15 + (height / 2));
+            var phase = (wb.phase != undefined) ? wb.phase : "";
+            context.fillText("p"+phase + ",id"+ id , x, y + 15 + (height / 2));
         }
 
         // drawing agents
@@ -78,7 +79,8 @@ function draw(agents, whiteboards) {
             drawAgentBody(agent, context, added, function (x, y, r) {
                 context.fillStyle = 'black';
                 context.font = '13px Arial';
-                context.fillText(agent.id, x + r, y - r * 2.7);
+                context.fillText("id" + agent.id, x + r, y - r * 2.7);
+                context.fillText("p" + agent.phase, x - r, y - r * 2.7);
             });
         }
     });

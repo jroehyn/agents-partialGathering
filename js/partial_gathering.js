@@ -128,20 +128,18 @@ function reset() {
             }
             if (this.ids.length == 3) {
                 if (this.ids[1] < Math.min(this.ids[0], this.ids[2])) {
-                    this.state = 'active';  // keep active
-                    var newId = this.ids[1];
-                    this.id = newId;
-                    this.ids = [];
-                    this.ids.push(newId);
-
-                    this.phase = this.phase + 1; // done the phase.
-                    whiteboards[this.nodeId].agentId = newId;
-                    whiteboards[this.nodeId].phase = this.phase;
-
                     if (this.phase == phaseLimit) {
                         this.state = 'leader';
                         wb.isGather = 'F';
+                        return;
                     }
+                    this.phase = this.phase + 1; // next phase
+                    this.state = 'active';  // keep active
+                    var newId = this.ids[1];
+                    this.ids = [];
+                    this.ids.push(newId);
+                    whiteboards[this.nodeId].agentId = newId;
+                    whiteboards[this.nodeId].phase = this.phase;
                 } else {
                     this.state = 'inactive';
                     var wb = whiteboards[this.nodeId];
@@ -179,7 +177,7 @@ function reset() {
         agent.nodeId = nodeId;
         agent.state = 'active';
         agent.ids = [];
-        agent.phase = 0;
+        agent.phase = 1;
         agent.count = 0;
         agent.act = act;
         agents.push(agent);
