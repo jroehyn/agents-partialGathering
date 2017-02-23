@@ -1,15 +1,9 @@
-function Agent(id, nodeId, state, memory, phase) {
-    this.id = id;
-    this.nodeId = nodeId;
-    this.state = state;
-    this.memory = memory;
-    this.phase = phase;
+function Agent(){
+
 }
 
-function Whiteboard(nodeId, context, isInactive) {
-    this.nodeId = nodeId;
-    this.context = context;
-    this.isInactive = isInactive;
+function Whiteboard(){
+
 }
 
 function draw(agents, whiteboards) {
@@ -104,7 +98,9 @@ function draw(agents, whiteboards) {
         else if (agent.state == 'inactive')
             context.fillStyle = 'gray';
         else if (agent.state == 'leader')
-            context.fillStyle = 'red';
+            context.fillStyle = '#C72C00';
+        else if (agent.state == 'moving')
+            context.fillStyle = '#35A201';
 
         var x = nodePosition[nodeId].x + sameNodeAgents * 10;
         var y = nodePosition[nodeId].y - 8 + sameNodeAgents * 3;
