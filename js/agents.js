@@ -12,9 +12,12 @@ function Whiteboard(nodeId, context, isInactive) {
     this.isInactive = isInactive;
 }
 
+var con;
 function draw(agents, whiteboards) {
+    
     // draw whiteboards
     network.on("afterDrawing", function (context) {
+        con = context;
         for (var i = 0; i < whiteboards.length; i++) {
             var wb = whiteboards[i];
             var nodeId = wb.nodeId;

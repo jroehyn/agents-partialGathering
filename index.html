@@ -19,28 +19,26 @@
 
     <div id="mynetwork"></div>
 
-
-
     <td>
         <table>
             <tr>
                 <td></td>
                 <td><label for="node-id">n (node size)</label></td>
-                <td><input id="n" type="text" value="15"></td>
+                <td><input id ="n" type="number" min="1" max="50" value=15></td>
             </tr>
             <tr>
                 <td></td>
                 <td><label for="node-label">k (agent size)</label></td>
-                <td><input id="k" type="text" value="10"></td>
+                <td><input id ="k" type="number" min="1" max="50" value=10></td>
             </tr>
             <tr>
                 <td></td>
                 <td><label for="node-label">g (g-gathering)</label></td>
-                <td><input id="g" type="text" value="5"></td>
+                <td><input id ="g" type="number" min="1" max="50" value=3></td>
             </tr>
         </table>
     </td>
-    <input type="button" value="start" onclick="start()">
+    <input type="button" value="reset" onclick="reset()">
     <input type="button" value="action" onclick="action()">
 
     <script type="text/javascript" src="js/agents.js"></script>

@@ -4,10 +4,12 @@ var g; // g-gathering problem
 
 var agents;
 var whiteboards;
+var phaseLimit;
+var isLeaderElected;
 
-start();
+reset();
 
-function start() {
+function reset() {
     _n = Number(document.getElementById('n').value);
     _k = Number(document.getElementById('k').value);
     _g = Number(document.getElementById('g').value);
@@ -15,7 +17,7 @@ function start() {
         alert('k must be less than n.');
         return;
     }
-//    if (n == _n && k == _k && g == _g) return;
+    //    if (n == _n && k == _k && g == _g) return;
     n = _n;
     k = _k;
     g = _g;
@@ -24,8 +26,7 @@ function start() {
     whiteboards = [];
     agents = [];
     phaseLimit = Math.ceil(Math.log2(g));
-    phase = 0;
-    round = 0;
+    isLeaderElected = false;
 
     // initialize nodes and whiteboards.
     var nodes = new vis.DataSet();
@@ -77,8 +78,8 @@ function start() {
             }
         },
         interaction: {
-            dragNodes: true,
-            dragView: true,
+            dragNodes: false,
+            dragView: false,
         }
     };
 
@@ -106,19 +107,19 @@ function start() {
 }
 
 function action() {
-    leaderElection();
-
+    if (!isLeaderElected)
+        leaderElection();
 }
 
 function leaderElection() {
-    var isFinished = true;
+    isLeaderElected = true;
     for (var i = 0; i < agents.length; i++) {
         var agent = agents[i];
         if (agent.state == 'active' && agent.phase < phaseLimit)
-            isFinished = false;
+            isLeaderElected = false;
     }
 
-    if (!isFinished) {
+    if (!isLeaderElected) {
         // move agents
         for (var i = 0; i < agents.length; i++) {
             var agent = agents[i];
@@ -130,22 +131,27 @@ function leaderElection() {
             if (agent.state == 'leader') continue;
 
             var wb = whiteboards[onNodeId];
-            if (wb.context != undefined && !wb.isInactive)
-                agent.memory.push(wb.context);
+            if (wb.context != undefined && !wb.isInactive) {
+                var memory = agent.memory;
+                if (wb.context == memory[memory.length - 1]) {
+                    agent.state = 'leader';
+                } else {
+                    agent.memory.push(wb.context);
+                }
+            }
 
             // finish reading 3 IDs
             if (agent.memory.length == 3) {
                 if (agent.memory[1] < agent.memory[0] && agent.memory[1] < agent.memory[2]) {
-                    if (agent.phase == phaseLimit) {
+                    agent.state = 'active';  // keep active
+                    var newId = agent.memory[1];
+                    agent.id = newId;
+                    agent.memory = [];
+                    agent.memory.push(newId);
+                    whiteboards[agent.nodeId].context = newId;
+                    agent.phase = agent.phase + 1; // next phase
+                    if (agent.phase == phaseLimit){
                         agent.state = 'leader';
-                    } else {
-                        agent.state = 'active';  // keep active
-                        var newId = agent.memory[1];
-                        agent.id = newId;
-                        agent.memory = [];
-                        agent.memory.push(newId);
-                        whiteboards[agent.nodeId].context = newId;
-                        agent.phase = agent.phase + 1;
                     }
                 } else {
                     agent.state = 'inactive';
@@ -157,9 +163,8 @@ function leaderElection() {
         draw(agents, whiteboards);
     } else {
         // turn to the next phase
-
         console.log("FINISH!");
-        
+
         for (var i = 0; i < whiteboards.length; i++) {
             whiteboards[i].context = undefined;
         }
