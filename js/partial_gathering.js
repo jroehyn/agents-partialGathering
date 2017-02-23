@@ -78,7 +78,7 @@ function reset() {
             }
         },
         interaction: {
-            dragNodes: false,
+            dragNodes: (k > 30)? false : true,
             dragView: false,
         }
     };
@@ -149,7 +149,7 @@ function leaderElection() {
                     agent.memory = [];
                     agent.memory.push(newId);
                     whiteboards[agent.nodeId].context = newId;
-                    agent.phase = agent.phase + 1; // next phase
+                    agent.phase = agent.phase + 1; // done the phase.
                     if (agent.phase == phaseLimit){
                         agent.state = 'leader';
                     }
