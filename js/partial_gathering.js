@@ -10,6 +10,7 @@ var isLeaderElected;
 var initialIdsLog;
 var actAgentsIndicesLog;
 var isReplayMode;
+var steps;
 
 reset();
 
@@ -40,6 +41,7 @@ function resetConfig(initAgentNodeIds) {
     agents = [];
     phaseLimit = Math.ceil(Math.log2(g));
     isLeaderElected = false;
+    steps = 0;
 
     // initialize nodes and whiteboards.
     var nodes = new vis.DataSet();
@@ -272,12 +274,14 @@ function action() {
     for (var i = 0; i < actAgents.length; i++) {
         actAgents[i].act();
     }
-
 }
 
 function actionButton() {
+    if (isFinished()) return;
     action();
+    steps++;
     draw(agents, whiteboards);
+    document.getElementById('count').innerHTML = 'STEPS:' + steps;
 }
 
 var round;
@@ -286,6 +290,7 @@ function replay() {
     round = -1;
     resetConfig(initialIdsLog);
     draw(agents, whiteboards);
+    document.getElementById('count').innerHTML = 'STEPS:' + steps;
 }
 
 function redo() {
@@ -297,16 +302,19 @@ function redo() {
         if (indices.indexOf(i) >= 0)
             agents[i].act();
     }
+    steps++;
     draw(agents, whiteboards);
+    document.getElementById('count').innerHTML = 'STEPS:' + steps;
 }
 
 function skip() {
-    var count = 0;
-    while (!isFinished() && count <= g * n * 100) {
+    steps = 0;
+    while (!isFinished() && steps <= 10000) {
         action();
-        count++;
+        steps++;
     }
     draw(agents, whiteboards);
+    document.getElementById('count').innerHTML = 'STEPS:' + steps;
 }
 
 function getNextNode(nodeId) {
