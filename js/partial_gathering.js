@@ -9,12 +9,12 @@ var isLeaderElected;
 
 var initialIdsLog;
 var actAgentsIndicesLog;
-var replayRound;
+var isReplayMode;
 
 reset();
 
 function reset() {
-    replayRound = -2;
+    isReplayMode = false;
     n = Number(document.getElementById('n').value);
     k = Number(document.getElementById('k').value);
     g = Number(document.getElementById('g').value);
@@ -113,17 +113,7 @@ function resetConfig(initAgentNodeIds) {
                 this.state = 'waitLeader';
                 return;
             }
-
-            if (wb.isGather == 'F')
-                this.state = 'moving';
-
-            else if (wb.isInactive == true) {
-                this.count = this.count + 1;
-                if ((this.count + 1) % g != 0)
-                    wb.isGather = 'F';
-                else
-                    wb.isGather = 'T';
-            }
+            leaderAction(this, wb);
             return;
         }
         else if (this.state == 'active') {
@@ -135,69 +125,79 @@ function resetConfig(initAgentNodeIds) {
                 this.state = 'wait';
                 return;
             }
-
-            if (wb.agentId == undefined)
-                return; // skip
-            if (wb.isInactive && wb.phase != this.phase)
-                return; // skip 
-
-            this.ids.push(wb.agentId);
-
-            // if only own id twice
-            //if (this.ids.length == 2 && this.ids[0] == this.ids[1]) {
-            if (this.ids.length == 2 && wb.phase == this.phase && wb.agentId == this.id) {
-                this.state = 'leader';
-                wb.isGather = 'F';
-                return;
-            }
-            if (this.ids.length == 3) {
-                if (this.ids[1] < Math.min(this.ids[0], this.ids[2])) {
-                    if (this.phase == phaseLimit) {
-                        this.state = 'leader';
-                        wb.isGather = 'F';
-                        return;
-                    }
-                    this.phase = this.phase + 1; // next phase
-                    this.state = 'active';  // keep active
-                    var newId = this.ids[1];
-                    this.id = newId;
-                    this.ids = [];
-                    this.ids.push(newId);
-                    whiteboards[this.nodeId].agentId = newId;
-                    whiteboards[this.nodeId].phase = this.phase;
-                } else {
-                    this.state = 'inactive';
-                    var wb = whiteboards[this.nodeId];
-                    wb.isInactive = true;
-                }
-            }
+            activeAction(this, wb);
             return;
         }
         else if (this.state == 'moving') {
             if (whiteboards[this.nodeId].isGather != 'T') {
                 var onNodeId = getNextNode(this.nodeId);
                 this.nodeId = onNodeId;
+            } else {
+                this.state = 'final'
             }
             return;
         } else if (this.state == 'wait') {
             var wb = whiteboards[this.nodeId];
             if (wb.isInactive || wb.phase == this.phase) {
                 this.state = 'active';
+                activeAction(this, wb);
             }
             return;
         } else if (this.state == 'waitLeader') {
             var wb = whiteboards[this.nodeId];
             if (wb.isInactive || wb.isGather != undefined) {
                 this.state = 'leader';
-                if (wb.isInactive == true) {
-                    this.count = this.count + 1;
-                    if ((this.count + 1) % g != 0)
-                        wb.isGather = 'F';
-                    else
-                        wb.isGather = 'T';
-                }
+                leaderAction(this, wb);
             }
             return;
+        }
+
+        function leaderAction(agent, wb) {
+            if (wb.isGather == 'F')
+                agent.state = 'moving';
+            if (wb.isInactive == true) {
+                agent.count = agent.count + 1;
+                if ((agent.count + 1) % g != 0)
+                    wb.isGather = 'F';
+                else
+                    wb.isGather = 'T';
+            }
+        }
+
+        function activeAction(agent, wb) {
+            if (wb.agentId == undefined)
+                return; // skip
+            if (wb.isInactive && wb.phase != agent.phase)
+                return; // skip 
+
+            agent.ids.push(wb.agentId);
+            // if only own id twice
+            if (agent.ids.length == 2 && wb.phase == agent.phase && wb.agentId == agent.id) {
+                agent.state = 'leader';
+                wb.isGather = 'F';
+                return;
+            }
+            if (agent.ids.length == 3) {
+                if (agent.ids[1] < Math.min(agent.ids[0], agent.ids[2])) {
+                    if (agent.phase == phaseLimit) {
+                        agent.state = 'leader';
+                        wb.isGather = 'F';
+                        return;
+                    }
+                    agent.phase = agent.phase + 1; // next phase
+                    agent.state = 'active';  // keep active
+                    var newId = agent.ids[1];
+                    agent.id = newId;
+                    agent.ids = [];
+                    agent.ids.push(newId);
+                    whiteboards[agent.nodeId].agentId = newId;
+                    whiteboards[agent.nodeId].phase = agent.phase;
+                } else {
+                    agent.state = 'inactive';
+                    var wb = whiteboards[agent.nodeId];
+                    wb.isInactive = true;
+                }
+            }
         }
     }
 
@@ -236,7 +236,7 @@ function resetConfig(initAgentNodeIds) {
 }
 
 function action() {
-    if (replayRound != -2) return;
+    if (isReplayMode) return;
     var s = document.getElementById('s').value;
     var actAgents = [];
     if (s == 'sync') {
@@ -256,20 +256,27 @@ function action() {
     for (var i = 0; i < actAgents.length; i++) {
         actAgents[i].act();
     }
+    
+}
+
+function actionButton(){
+    action();
     draw(agents, whiteboards);
 }
 
+var round;
 function replay() {
-    replayRound = -1;
+    isReplayMode = true;
+    round = -1;
     resetConfig(initialIdsLog);
     draw(agents, whiteboards);
 }
 
 function redo() {
-    if (replayRound == -2) return;
-    if (replayRound == actAgentsIndicesLog.length - 1) return;
-    replayRound++;
-    var indices = actAgentsIndicesLog[replayRound];
+    if (!isReplayMode) return;
+    if (round == actAgentsIndicesLog.length - 1) return;
+    round++;
+    var indices = actAgentsIndicesLog[round];
     for (var i = 0; i < agents.length; i++) {
         if (indices.indexOf(i) >= 0)
             agents[i].act();
@@ -277,6 +284,26 @@ function redo() {
     draw(agents, whiteboards);
 }
 
+function skip() {
+    var count = 0;
+    while (!isFinished() && count < 500){
+        action();
+        count++;
+    }
+    draw(agents, whiteboards);
+}
+
 function getNextNode(nodeId) {
     return (nodeId + 1) % n;
+}
+
+function isFinished(){
+    var isFinished = true;
+    for (var i = 0; i < agents.length; i++){
+        if (agents[i].state != 'final'){
+            isFinished = false;
+            break;
+        }
+    }
+    return isFinished;
 }

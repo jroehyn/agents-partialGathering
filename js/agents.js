@@ -110,6 +110,8 @@ function draw(agents, whiteboards) {
             context.fillStyle = '#35A201';
         else if (agent.state == 'waitLeader')
             context.fillStyle = '#5973B6';
+        else if (agent.state == 'final')
+            context.fillStyle = 'gray';
         var x = nodePosition[nodeId].x + sameNodeAgents * 10;
         var y = nodePosition[nodeId].y - 8 + sameNodeAgents * 3;
         var r = 13;
@@ -124,7 +126,7 @@ function getRandomInt(min, max) {
 function getRandomIntList(min, max) {
     var ret = [];
     for (var i = min; i <= max; i++) {
-        if (Math.random() > 0.3)
+        if (Math.random() > 0.5)
             ret.push(i);
     }
     return ret;
