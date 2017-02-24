@@ -129,26 +129,39 @@ function resetConfig(initAgentNodeIds) {
             return;
         }
         else if (this.state == 'moving') {
-            if (whiteboards[this.nodeId].isGather != 'T') {
-                var onNodeId = getNextNode(this.nodeId);
-                this.nodeId = onNodeId;
-            } else {
+            var wb = whiteboards[this.nodeId];
+            if (wb.isGather == 'T') {
                 this.state = 'final'
+            } else {
+                var onNodeId = getNextNode(this.nodeId);
+                var nwb = whiteboards[onNodeId];
+                if (nwb.agentId != undefined && nwb.isGather == undefined)
+                    this.state = 'waitMoving';
+                else
+                    this.nodeId = onNodeId;
             }
             return;
-        } else if (this.state == 'wait') {
+        }
+        else if (this.state == 'wait') {
             var wb = whiteboards[this.nodeId];
             if (wb.isInactive || wb.phase == this.phase) {
                 this.state = 'active';
                 activeAction(this, wb);
             }
             return;
-        } else if (this.state == 'waitLeader') {
+        }
+        else if (this.state == 'waitLeader') {
             var wb = whiteboards[this.nodeId];
             if (wb.isInactive || wb.isGather != undefined) {
                 this.state = 'leader';
                 leaderAction(this, wb);
             }
+            return;
+        }
+        else if (this.state == 'waitMoving') {
+            var wb = whiteboards[this.nodeId];
+            if (wb.isGather != undefined)
+                this.state = 'moving';
             return;
         }
 
@@ -157,10 +170,13 @@ function resetConfig(initAgentNodeIds) {
                 agent.state = 'moving';
             if (wb.isInactive == true) {
                 agent.count = agent.count + 1;
-                if ((agent.count + 1) % g != 0)
-                    wb.isGather = 'F';
-                else
+                if ((agent.count + 1) % g == 0)
                     wb.isGather = 'T';
+                else
+                    wb.isGather = 'F';
+            }
+            else {
+               wb.isGather = 'F';  // to awake waitMoving agent.x
             }
         }
 
@@ -256,10 +272,10 @@ function action() {
     for (var i = 0; i < actAgents.length; i++) {
         actAgents[i].act();
     }
-    
+
 }
 
-function actionButton(){
+function actionButton() {
     action();
     draw(agents, whiteboards);
 }
@@ -286,7 +302,7 @@ function redo() {
 
 function skip() {
     var count = 0;
-    while (!isFinished() && count < 500){
+    while (!isFinished() && count <= g * n * 100) {
         action();
         count++;
     }
@@ -297,10 +313,10 @@ function getNextNode(nodeId) {
     return (nodeId + 1) % n;
 }
 
-function isFinished(){
+function isFinished() {
     var isFinished = true;
-    for (var i = 0; i < agents.length; i++){
-        if (agents[i].state != 'final'){
+    for (var i = 0; i < agents.length; i++) {
+        if (agents[i].state != 'final') {
             isFinished = false;
             break;
         }

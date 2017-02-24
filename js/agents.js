@@ -100,15 +100,17 @@ function draw(agents, whiteboards) {
         context.strokeStyle = 'black';
         if (agent.state == 'active')
             context.fillStyle = '#FF6F00';
-        else if (agent.state == 'wait')
-            context.fillStyle = '#9B59B6';
         else if (agent.state == 'inactive')
             context.fillStyle = 'gray';
         else if (agent.state == 'leader')
             context.fillStyle = '#C72C00';
         else if (agent.state == 'moving')
             context.fillStyle = '#35A201';
+        else if (agent.state == 'wait')
+            context.fillStyle = '#5973B6';
         else if (agent.state == 'waitLeader')
+            context.fillStyle = '#5973B6';
+        else if (agent.state == 'waitMoving')
             context.fillStyle = '#5973B6';
         else if (agent.state == 'final')
             context.fillStyle = 'gray';
@@ -126,7 +128,7 @@ function getRandomInt(min, max) {
 function getRandomIntList(min, max) {
     var ret = [];
     for (var i = min; i <= max; i++) {
-        if (Math.random() > 0.5)
+        if (Math.random() > 0.2)
             ret.push(i);
     }
     return ret;
