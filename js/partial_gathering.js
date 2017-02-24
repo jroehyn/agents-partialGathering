@@ -7,9 +7,14 @@ var whiteboards;
 var phaseLimit;
 var isLeaderElected;
 
+var initialIdsLog;
+var actAgentsIndicesLog;
+var replayRound;
+
 reset();
 
 function reset() {
+    replayRound = -2;
     n = Number(document.getElementById('n').value);
     k = Number(document.getElementById('k').value);
     g = Number(document.getElementById('g').value);
@@ -20,8 +25,17 @@ function reset() {
         alert('g must be less than k.');
         return;
     }
+    nodeIds = getRandomIntNList(0, n - 1, k);
+    resetConfig(nodeIds);
 
-    // reset all
+    // for logging.
+    initialIdsLog = nodeIds;
+    actAgentsIndicesLog = [];
+
+    draw(agents, whiteboards);
+}
+
+function resetConfig(initAgentNodeIds) {
     whiteboards = [];
     agents = [];
     phaseLimit = Math.ceil(Math.log2(g));
@@ -95,6 +109,11 @@ function reset() {
             this.nodeId = onNodeId;
             var wb = whiteboards[onNodeId];
 
+            if (wb.agentId != undefined && !wb.isInactive && wb.isGather == undefined) {
+                this.state = 'waitLeader';
+                return;
+            }
+
             if (wb.isGather == 'F')
                 this.state = 'moving';
 
@@ -117,11 +136,16 @@ function reset() {
                 return;
             }
 
-            if (wb.agentId != undefined && !wb.isInactive)
-                this.ids.push(wb.agentId);
+            if (wb.agentId == undefined)
+                return; // skip
+            if (wb.isInactive && wb.phase != this.phase)
+                return; // skip 
+
+            this.ids.push(wb.agentId);
 
             // if only own id twice
-            if (this.ids.length == 2 && this.ids[0] == this.ids[1]) {
+            //if (this.ids.length == 2 && this.ids[0] == this.ids[1]) {
+            if (this.ids.length == 2 && wb.phase == this.phase && wb.agentId == this.id) {
                 this.state = 'leader';
                 wb.isGather = 'F';
                 return;
@@ -136,6 +160,7 @@ function reset() {
                     this.phase = this.phase + 1; // next phase
                     this.state = 'active';  // keep active
                     var newId = this.ids[1];
+                    this.id = newId;
                     this.ids = [];
                     this.ids.push(newId);
                     whiteboards[this.nodeId].agentId = newId;
@@ -160,28 +185,33 @@ function reset() {
                 this.state = 'active';
             }
             return;
+        } else if (this.state == 'waitLeader') {
+            var wb = whiteboards[this.nodeId];
+            if (wb.isInactive || wb.isGather != undefined) {
+                this.state = 'leader';
+                if (wb.isInactive == true) {
+                    this.count = this.count + 1;
+                    if ((this.count + 1) % g != 0)
+                        wb.isGather = 'F';
+                    else
+                        wb.isGather = 'T';
+                }
+            }
+            return;
         }
-
     }
 
-    // initialize agents
-    var added = [];
     var id = 0;
-    while (added.length != k) {
-        var nodeId = getRandomInt(0, n - 1);
-        if (added.indexOf(nodeId) >= 0) continue; // if already exists
-        added.push(nodeId);
-
+    for (var i = 0; i < k; i++) {
         var agent = new Agent()
         agent.id = id;
-        agent.nodeId = nodeId;
         agent.state = 'active';
         agent.ids = [];
         agent.phase = 1;
         agent.count = 0;
         agent.act = act;
         agents.push(agent);
-
+        agent.nodeId = initAgentNodeIds[i];
         id++;
     }
 
@@ -199,27 +229,50 @@ function reset() {
     for (var i = 0; i < agents.length; i++) {
         var agent = agents[i];
         var wb = whiteboards[agent.nodeId];
-        wb.agentId = agent.id;
         wb.phase = agent.phase;
+        wb.agentId = agent.id;
         agent.ids.push(agent.id);
     }
-    draw(agents, whiteboards);
 }
 
 function action() {
+    if (replayRound != -2) return;
     var s = document.getElementById('s').value;
     var actAgents = [];
     if (s == 'sync') {
         actAgents = agents;
+        // for logging 
+        var indices = [];
+        for (var i = 0; i < agents.length; i++) indices.push(i);
+        actAgentsIndicesLog.push(indices);
     } else if (s == 'async') {
         var indices = getRandomIntList(0, agents.length - 1);
         for (var i = 0; i < indices.length; i++) {
             var index = indices[i];
             actAgents.push(agents[index]);
         }
+        actAgentsIndicesLog.push(indices); // for logging
     }
     for (var i = 0; i < actAgents.length; i++) {
         actAgents[i].act();
+    }
+    draw(agents, whiteboards);
+}
+
+function replay() {
+    replayRound = -1;
+    resetConfig(initialIdsLog);
+    draw(agents, whiteboards);
+}
+
+function redo() {
+    if (replayRound == -2) return;
+    if (replayRound == actAgentsIndicesLog.length - 1) return;
+    replayRound++;
+    var indices = actAgentsIndicesLog[replayRound];
+    for (var i = 0; i < agents.length; i++) {
+        if (indices.indexOf(i) >= 0)
+            agents[i].act();
     }
     draw(agents, whiteboards);
 }

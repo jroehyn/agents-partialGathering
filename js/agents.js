@@ -42,9 +42,9 @@ function draw(agents, whiteboards) {
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             context.font = '18px Arial';
-            var id = (wb.agentId != undefined) ? wb.agentId : "";
-            var phase = (wb.phase != undefined) ? wb.phase : "";
-            context.fillText("p"+phase + ",id"+ id , x, y + 15 + (height / 2));
+            var id = (wb.agentId != undefined) ? " id" + wb.agentId : "";
+            var phase = (wb.phase != undefined) ? "p" + wb.phase : "";
+            context.fillText(phase + id , x, y + 15 + (height / 2));
         }
 
         // drawing agents
@@ -108,14 +108,13 @@ function draw(agents, whiteboards) {
             context.fillStyle = '#C72C00';
         else if (agent.state == 'moving')
             context.fillStyle = '#35A201';
-
+        else if (agent.state == 'waitLeader')
+            context.fillStyle = '#5973B6';
         var x = nodePosition[nodeId].x + sameNodeAgents * 10;
         var y = nodePosition[nodeId].y - 8 + sameNodeAgents * 3;
         var r = 13;
         f(x, y, r);
     }
-
-
 }
 
 function getRandomInt(min, max) {
@@ -125,8 +124,18 @@ function getRandomInt(min, max) {
 function getRandomIntList(min, max) {
     var ret = [];
     for (var i = min; i <= max; i++) {
-        if (Math.random() > 0.2)
+        if (Math.random() > 0.3)
             ret.push(i);
     }
     return ret;
+}
+
+function getRandomIntNList(min, max, length){
+    var list = [];
+    while (list.length < length){
+        var r = getRandomInt(min,max);
+        if (list.indexOf(r) >= 0) continue;
+        list.push(r);
+    }
+    return list;
 }
