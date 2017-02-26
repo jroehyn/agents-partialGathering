@@ -14,27 +14,6 @@ var steps;
 
 reset();
 
-function reset() {
-    isReplayMode = false;
-    n = Number(document.getElementById('n').value);
-    k = Number(document.getElementById('k').value);
-    g = Number(document.getElementById('g').value);
-    if (k > n) {
-        alert('k must be less than n.');
-        return;
-    } else if (g > k) {
-        alert('g must be less than k.');
-        return;
-    }
-    nodeIds = getRandomIntNList(0, n - 1, k);
-    resetConfig(nodeIds);
-
-    // for logging.
-    initialIdsLog = nodeIds;
-    actAgentsIndicesLog = [];
-
-    draw(agents, whiteboards);
-}
 
 function resetConfig(initAgentNodeIds) {
     whiteboards = [];
@@ -46,7 +25,9 @@ function resetConfig(initAgentNodeIds) {
     // initialize nodes and whiteboards.
     var nodes = new vis.DataSet();
     for (var i = 0; i < n; i++) {
-        nodes.add({ id: i });
+        nodes.add({
+            id: i
+        });
     }
     var edges = new vis.DataSet();
     for (var i = 0; i < n; i++) {
@@ -99,73 +80,71 @@ function resetConfig(initAgentNodeIds) {
 
     network = new vis.Network(container, data, options);
 
+    // "act" is a function which represents a agent action based on its state.
     var act = function () {
-        if (this.state == 'inactive') {
-            var wb = whiteboards[this.nodeId];
-            if (wb.isGather == 'T' || wb.isGather == 'F')
-                this.state = 'moving';
-            return;
-        }
-        else if (this.state == 'leader') {
-            var onNodeId = getNextNode(this.nodeId);
-            this.nodeId = onNodeId;
-            var wb = whiteboards[onNodeId];
-
-            if (wb.agentId != undefined && !wb.isInactive && wb.isGather == undefined) {
-                this.state = 'waitLeader';
-                return;
-            }
-            leaderAction(this, wb);
-            return;
-        }
-        else if (this.state == 'active') {
-            var onNodeId = getNextNode(this.nodeId);
-            this.nodeId = onNodeId;
-            var wb = whiteboards[onNodeId];
-
-            if (!wb.isInactive && wb.phase < this.phase) {
-                this.state = 'wait';
-                return;
-            }
-            activeAction(this, wb);
-            return;
-        }
-        else if (this.state == 'moving') {
-            var wb = whiteboards[this.nodeId];
-            if (wb.isGather == 'T') {
-                this.state = 'final'
-            } else {
+        switch (this.state) {
+            case 'inactive':
+                var wb = whiteboards[this.nodeId];
+                if (wb.isGather == 'T' || wb.isGather == 'F')
+                    this.state = 'moving';
+                break;
+            case 'leader':
                 var onNodeId = getNextNode(this.nodeId);
-                var nwb = whiteboards[onNodeId];
-                if (nwb.agentId != undefined && nwb.isGather == undefined)
-                    this.state = 'waitMoving';
-                else
-                    this.nodeId = onNodeId;
-            }
-            return;
-        }
-        else if (this.state == 'wait') {
-            var wb = whiteboards[this.nodeId];
-            if (wb.isInactive || wb.phase == this.phase) {
-                this.state = 'active';
-                activeAction(this, wb);
-            }
-            return;
-        }
-        else if (this.state == 'waitLeader') {
-            var wb = whiteboards[this.nodeId];
-            if (wb.isInactive || wb.isGather != undefined) {
-                this.state = 'leader';
+                this.nodeId = onNodeId;
+                var wb = whiteboards[onNodeId];
+
+                if (wb.agentId != undefined && !wb.isInactive && wb.isGather == undefined) {
+                    this.state = 'waitLeader';
+                    return;
+                }
                 leaderAction(this, wb);
-            }
-            return;
-        }
-        else if (this.state == 'waitMoving') {
-            var wb = whiteboards[this.nodeId];
-            if (wb.isGather != undefined)
-                this.state = 'moving';
-            return;
-        }
+                break;
+            case 'active':
+                var onNodeId = getNextNode(this.nodeId);
+                this.nodeId = onNodeId;
+                var wb = whiteboards[onNodeId];
+
+                if (!wb.isInactive && wb.phase < this.phase) {
+                    this.state = 'wait';
+                    return;
+                }
+                activeAction(this, wb);
+                break;
+            case 'moving':
+                var wb = whiteboards[this.nodeId];
+                if (wb.isGather == 'T') {
+                    this.state = 'final'
+                } else {
+                    var onNodeId = getNextNode(this.nodeId);
+                    var nwb = whiteboards[onNodeId];
+                    if (nwb.agentId != undefined && nwb.isGather == undefined)
+                        this.state = 'waitMoving';
+                    else
+                        this.nodeId = onNodeId;
+                }
+                break;
+            case 'wait':
+                var wb = whiteboards[this.nodeId];
+                if (wb.isInactive || wb.phase == this.phase) {
+                    this.state = 'active';
+                    activeAction(this, wb);
+                }
+                break;
+            case 'waitLeader':
+                var wb = whiteboards[this.nodeId];
+                if (wb.isInactive || wb.isGather != undefined) {
+                    this.state = 'leader';
+                    leaderAction(this, wb);
+                }
+                break;
+            case 'waitMoving':
+                var wb = whiteboards[this.nodeId];
+                if (wb.isGather != undefined)
+                    this.state = 'moving';
+                break;
+            default:
+                break;
+        } // end switch statement
 
         function leaderAction(agent, wb) {
             if (wb.isGather == 'F')
@@ -178,7 +157,7 @@ function resetConfig(initAgentNodeIds) {
                     wb.isGather = 'F';
             }
             else {
-               wb.isGather = 'F';  // to awake waitMoving agent.x
+                wb.isGather = 'F';  // to awake waitMoving agent.x
             }
         }
 
@@ -217,8 +196,10 @@ function resetConfig(initAgentNodeIds) {
                 }
             }
         }
-    }
 
+    } // end act function.
+
+    // initialize agents
     var id = 0;
     for (var i = 0; i < k; i++) {
         var agent = new Agent()
@@ -253,7 +234,7 @@ function resetConfig(initAgentNodeIds) {
     }
 }
 
-function action() {
+function moveAgents() {
     if (isReplayMode) return;
     var s = document.getElementById('s').value;
     var actAgents = [];
@@ -276,14 +257,41 @@ function action() {
     }
 }
 
+// for reset button
+function reset() {
+    isReplayMode = false;
+    n = Number(document.getElementById('n').value);
+    k = Number(document.getElementById('k').value);
+    g = Number(document.getElementById('g').value);
+    if (k > n) {
+        alert('k must be less than n.');
+        return;
+    } else if (g > k) {
+        alert('g must be less than k.');
+        return;
+    }
+    // set initial agents' position
+    nodeIds = getRandomIntNList(0, n - 1, k);
+    resetConfig(nodeIds);
+
+    // for logging.
+    initialIdsLog = nodeIds;
+    actAgentsIndicesLog = [];
+
+    draw(agents, whiteboards);
+}
+
+// for action button
 function actionButton() {
     if (isFinished()) return;
-    action();
+    moveAgents();
     steps++;
     draw(agents, whiteboards);
     document.getElementById('count').innerHTML = 'STEPS:' + steps;
 }
 
+
+// for replay button
 var round;
 function replay() {
     isReplayMode = true;
@@ -293,9 +301,11 @@ function replay() {
     document.getElementById('count').innerHTML = 'STEPS:' + steps;
 }
 
+// for -> button
 function redo() {
     if (!isReplayMode) return;
     if (round == actAgentsIndicesLog.length - 1) return;
+
     round++;
     var indices = actAgentsIndicesLog[round];
     for (var i = 0; i < agents.length; i++) {
@@ -307,18 +317,15 @@ function redo() {
     document.getElementById('count').innerHTML = 'STEPS:' + steps;
 }
 
+// for skip button
 function skip() {
     steps = 0;
     while (!isFinished() && steps <= 10000) {
-        action();
+        moveAgents();
         steps++;
     }
     draw(agents, whiteboards);
     document.getElementById('count').innerHTML = 'STEPS:' + steps;
-}
-
-function getNextNode(nodeId) {
-    return (nodeId + 1) % n;
 }
 
 function isFinished() {
@@ -330,4 +337,8 @@ function isFinished() {
         }
     }
     return isFinished;
+}
+
+function getNextNode(nodeId) {
+    return (nodeId + 1) % n;
 }
