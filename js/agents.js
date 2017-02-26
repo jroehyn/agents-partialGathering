@@ -42,9 +42,10 @@ function draw(agents, whiteboards) {
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             context.font = '18px Arial';
-            var id = (wb.agentId != undefined) ? " id" + wb.agentId : "";
-            var phase = (wb.phase != undefined) ? "p" + wb.phase : "";
-            context.fillText(phase + id , x, y + 15 + (height / 2));
+            var id = (wb.agentId != undefined) ? wb.agentId : "";
+            context.fillText(id , x, y + 15 + (height / 2));
+            //var phase = (wb.phase != undefined) ? "p" + wb.phase : "";
+            //context.fillText(phase + id , x, y + 15 + (height / 2));
         }
 
         // drawing agents
@@ -78,9 +79,10 @@ function draw(agents, whiteboards) {
             var agent = agents[i];
             drawAgentBody(agent, context, added, function (x, y, r) {
                 context.fillStyle = 'black';
-                context.font = '13px Arial';
-                context.fillText("id" + agent.id, x + r, y - r * 2.7);
-                context.fillText("p" + agent.phase, x - r, y - r * 2.7);
+                context.font = '14px Arial';
+                context.fillText(agent.id, x + r, y - r * 2.7);
+                //context.fillText("id" + agent.id, x + r, y - r * 2.7);
+                //context.fillText("p" + agent.phase, x - r, y - r * 2.7);
             });
         }
     });
