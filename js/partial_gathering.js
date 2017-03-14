@@ -281,6 +281,12 @@ function reset() {
     draw(agents, whiteboards);
 }
 
+// for auto button
+function auto() {
+    actionButton();
+}
+
+
 // for action button
 function actionButton() {
     if (isFinished()) return;
